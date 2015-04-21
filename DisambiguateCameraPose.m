@@ -7,14 +7,14 @@ max_count = 0;
 
 
 for i=1:4
-    Ccur = Cset(:,:,i);
-    Rcur = Rset(:,:,i);
-    Xcur = Xcur(:,:,i);
+    Ccur = Cset{i};
+    Rcur = Rset{i};
+    Xcur = Xset{i};
     
     numpts = size(Xcur, 2);
     count = 0;
     for j=1:numpts
-        if R(3,:)'*(Xcur(:,j)-Ccur)
+        if R(3,:)'*(Xcur(:,j)-Ccur) > 0 %cheirality condition
             count = count +1;
         end
     end

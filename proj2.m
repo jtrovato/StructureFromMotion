@@ -1,6 +1,9 @@
 %Structure from motion
 
 %% Parse the Data
+K = [568.996140852 0 643.21055941;
+     0 568.988362396 477.982801038;
+     0 0 1]
 
 matches = cell(5,6);
 
@@ -15,18 +18,37 @@ for i=3:length(mdir)
     end
 end
 
-
-
-
-
-
 %% Reject Outliers with RANSAC
 
+inliers = cell(5,6);
 numimages = length(mdir)-2;
 for i=1:numimages
     for j = i+1:numimages
         cur_m = matches{i, j};
-        [inliers1 , inliers2, inds] = GetInliersRANSAC(cur_m(:,1:2), cur_m(:,3:4))
+        [inliers1 , inliers2, inds] = GetInliersRANSAC(cur_m(:,1:2), cur_m(:,3:4));
+        inliers{i,j} = [inliers1, inliers2];
     end
 end
+
+%% Estimate initial C and R
+inliers12 = inliers{1,2};
+F = EstimateFundamentalMatrix(inliers12(:,1:2), inliers12(:,3:4));
+E = EssentialMatrixFromFundamentalMatrix(F, K);
+[Cset, Rset] = ExtractCameraPose(E);
+
+Xset = cell(4,1);
+for i=1:4
+    Xset{i} = LinearTriangulation(K, zeros(3,1), eye(3), Cset(:,:,i), Rset(:,:,i), inliers12(:,1:2), inliers12(:,3:4));
+end
+
+[C,R] = DisambiguateCameraPose(Cset, Rset, Xset);
+points = NonlinearTriangulation(K, zeros(3,1), eye(3), C, inliers12(:,1:2), inliers12(:,3:4));
+Cset = cell(C);
+Rset = cell(R);
+
+%% Register Cameras and 3D  Points from Other Images
+for i=1:3
+    
+end
+
 
