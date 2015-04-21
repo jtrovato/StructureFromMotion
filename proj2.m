@@ -17,12 +17,16 @@ end
 
 
 
+
+
+
 %% Reject Outliers with RANSAC
 
 numimages = length(mdir)-2;
 for i=1:numimages
     for j = i+1:numimages
         cur_m = matches{i, j};
-        GetInliersRANSAC(cur_m(:,1:2), cur_m(:,3:4))
+        [inliers1 , inliers2, inds] = GetInliersRANSAC(cur_m(:,1:2), cur_m(:,3:4))
     end
 end
+
