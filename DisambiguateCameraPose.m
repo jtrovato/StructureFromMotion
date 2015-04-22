@@ -14,7 +14,7 @@ for i=1:4
     numpts = size(Xcur, 2);
     count = 0;
     for j=1:numpts
-        if R(3,:)'*(Xcur(:,j)-Ccur) > 0 %cheirality condition
+        if Rcur(3,:)*(Xcur(j,:)'-Ccur) > 0 %cheirality condition
             count = count +1;
         end
     end

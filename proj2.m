@@ -3,7 +3,7 @@
 %% Parse the Data
 K = [568.996140852 0 643.21055941;
      0 568.988362396 477.982801038;
-     0 0 1]
+     0 0 1];
 
 matches = cell(5,6);
 
@@ -24,21 +24,25 @@ inliers = cell(5,6);
 numimages = length(mdir)-2;
 for i=1:numimages
     for j = i+1:numimages
-        cur_m = matches{i, j};
-        [inliers1 , inliers2, inds] = GetInliersRANSAC(cur_m(:,1:2), cur_m(:,3:4));
-        inliers{i,j} = [inliers1, inliers2];
+        if ~isempty(matches{i, j})
+            cur_m = matches{i, j};
+            [inliers1 , inliers2, inds] = GetInliersRANSAC(cur_m(:,1:2), cur_m(:,3:4));
+            inliers{i,j} = [inliers1, inliers2];
+        end
     end
 end
 
 %% Estimate initial C and R
 inliers12 = inliers{1,2};
-F = EstimateFundamentalMatrix(inliers12(:,1:2), inliers12(:,3:4));
+x1 = [inliers12(:,1:2) , ones(size(inliers12, 1), 1)];
+x2 = [inliers12(:,3:4) , ones(size(inliers12, 1), 1)];
+F = EstimateFundamentalMatrix(x1, x2);
 E = EssentialMatrixFromFundamentalMatrix(F, K);
 [Cset, Rset] = ExtractCameraPose(E);
 
 Xset = cell(4,1);
 for i=1:4
-    Xset{i} = LinearTriangulation(K, zeros(3,1), eye(3), Cset(:,:,i), Rset(:,:,i), inliers12(:,1:2), inliers12(:,3:4));
+    Xset{i} = LinearTriangulation(K, zeros(3,1), eye(3), Cset{i}, Rset{i}, inliers12(:,1:2), inliers12(:,3:4));
 end
 
 [C,R] = DisambiguateCameraPose(Cset, Rset, Xset);
