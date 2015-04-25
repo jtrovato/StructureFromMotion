@@ -8,10 +8,10 @@ function X = NonlinearTriangulation(K, C1, R1, C2, R2, x1, x2, X0)
     opts = optimoptions(@lsqnonlin, 'Algorithm', 'levenberg-marquardt', 'TolX', 1e-5, 'TolFun', 1e-5, 'MaxFunEvals', 1e64, 'MaxIter', 1e64, 'Display', 'iter');
 
     
-    X = lsqnonlin(@objective, X0, [], [], opts, P1, P2, x1, x2);
+    X = lsqnonlin(@repro_error, X0, [], [], opts, P1, P2, x1, x2);
     
 
-    function J = objective(X, P1, P2, x1, x2)
+    function J = repro_error(X, P1, P2, x1, x2)
     %cost function to be minimized
     Xaug = [X, ones(size(X,1),1)];
     

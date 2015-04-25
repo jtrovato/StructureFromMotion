@@ -9,6 +9,7 @@ K = [568.996140852 0 643.21055941;
 matches = cell(5,6);
 
 mdir = dir('./matching');
+numims = length(mdir)-2;
 for i=3:length(mdir)
     %fprintf([mdir(i).name, '\n']);
     data = dlmread(['./matching/', mdir(i).name], ' ', 1 ,0);
@@ -84,7 +85,7 @@ if verbose
     end
 end
 
-%% Estimate initial C and R
+%% Estimate initial C and R between first two images
 fprintf('Calculating Initial Guess\n');
 Ii = imread('image0000002.bmp');
 Ij = imread('image0000003.bmp');
@@ -98,7 +99,8 @@ E = EssentialMatrixFromFundamentalMatrix(F, K);
 Xset = cell(4,1);
 for i=1:4
     %start the transformation with the identity and build from there
-    Xset{i} = LinearTriangulation(K, [1;0;0], eye(3), Cset{i}, Rset{i}, x1, x2);
+    Xset{i} = LinearTriangulation(K, [0;0;0], eye(3), Cset{i}, Rset{i}, x1, x2);
+    verbose = 1;
     if verbose
         points = Xset{i};
         subplot(2,2,i);
@@ -106,10 +108,10 @@ for i=1:4
     end
 end
 fprintf('Refine Initial Guess\n');
-[C,R,X0] = DisambiguateCameraPose(Cset, Rset, Xset);
-%points = NonlinearTriangulation(K, zeros(3,1), eye(3), C, R, x1, x2, X0);
-Cset = {C};
-Rset = {R};
+[C0,R0,X0] = DisambiguateCameraPose(Cset, Rset, Xset); %initial structure from first two images is in X0. initial transform is [R, -C]
+%X = NonlinearTriangulation(K, zeros(3,1), eye(3), C, R, x1, x2, X0);
+Cset = {C0};
+Rset = {R0};
 
 %% Plot the 3D points
 figure();
@@ -121,8 +123,23 @@ y = ylim;
 mesh(gx, gy, zeros(size(gy)));
 
 %% Register Cameras and 3D  Points from Other Images
-for i=1:3
+% after the first two images, start with the third and registers the rest
+for i=3:numims 
+    [Cnew, Rnew] = PnPRANSAC(X,x,k);
+    [Cnew, Rnew] = NonLinearPnP(X,x,k,Cnew,Rnew);
+    %take the union of the new tranaltion and rotations ---> isn't it
+    %pretty unlikely that the same C or R will be in the set
     
+    Cset{end+1} = Cnew;
+    Rset{end+1} = Rnew;
+    X0 = LinearTriangulation(K, C0, R0, Cnew, Rnew, x1, x2);
+    Xnew = NonlinearTriangulation(K, C0, R0, Cnew, Rnew, x1, x2, X0); 
+    
+    X = [X; Xnew];
+    %create traj
+    
+    V = BuildVisibilityMatrix(traj);
+    [Cset, Rset, X] = BundleAdjustment(Cset, Rset, X, K, traj, V);
 end
 
 
