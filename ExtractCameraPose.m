@@ -1,6 +1,6 @@
 function [Cset, Rset] = ExtractCameraPose(E)
 %given the essential matrix return the four possible camera configurations.
-[U,D,V]=svd(E);
+[U,~,V]=svd(E);
 W = [0 -1 0
     1 0 0
     0 0 1];
@@ -19,7 +19,7 @@ Rset{3} = U*W'*V';
 Rset{4} = U*W'*V';
 
 for i=1:4
-    if round(det(Rset{i})) == -1
+    if det(Rset{i}) < 0
         Cset{i} = -Cset{i};
         Rset{i} = -Rset{i};
     end

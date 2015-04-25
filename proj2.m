@@ -1,6 +1,7 @@
 %Structure from motion
 
 %% Parse the Data
+fprintf('Loading the Data\n');
 K = [568.996140852 0 643.21055941;
      0 568.988362396 477.982801038;
      0 0 1];
@@ -9,7 +10,7 @@ matches = cell(5,6);
 
 mdir = dir('./matching');
 for i=3:length(mdir)
-    fprintf([mdir(i).name, '\n']);
+    %fprintf([mdir(i).name, '\n']);
     data = dlmread(['./matching/', mdir(i).name], ' ', 1 ,0);
     for j=1:length(data)
         for k=1:data(j, 1)-1
@@ -18,10 +19,25 @@ for i=3:length(mdir)
     end
 end
 
-%% Reject Outliers with RANSAC
+% %% Check Matches
+% figure();
+% Ii = imread('image0000002.bmp');
+% Ij = imread('image0000003.bmp');
+% m = matches{2,3};
+% for i=1:length(m)
+%     subplot(1,2,1);
+%     imshow(Ii); hold on;
+%     plot(m(i,1), m(i,2), 'rx'); hold off;
+%     subplot(1,2,2);
+%     imshow(Ij); hold on;
+%     plot(m(i,3), m(i,4), 'rx'); hold off;
+%     pause
+% end
 
+%% Reject Outliers with RANSAC
+fprintf('RANSAC\n');
 inliers = cell(5,6);
-numimages = length(mdir)-2;
+numimages = 6;
 for i=1:numimages
     for j = i+1:numimages
         if ~isempty(matches{i, j})
@@ -32,23 +48,77 @@ for i=1:numimages
     end
 end
 
+%% Visualize RANSAC
+verbose = 1;
+if verbose
+    for i=1:numimages
+        Ii = imread(['image000000', num2str(i), '.bmp']);
+        for j = i+1:numimages
+
+            if ~isempty(inliers{i, j})
+                Ij = imread(['image000000', num2str(j), '.bmp']);
+                cur_inliers = inliers{i,j};
+                cur_matches = matches{i,j};
+                subplot(2,2,1);
+                imshow(Ii); hold on;
+                plot(cur_matches(:,1), cur_matches(:,2), 'rx');
+                subplot(2,2,2);
+                imshow(Ij); hold on;
+                plot(cur_matches(:,3), cur_matches(:,4), 'gx');
+                subplot(2,2,3);
+                imshow(Ii); hold on;
+                plot(cur_inliers(:,1), cur_inliers(:,2), 'rx');
+                subplot(2,2,4);
+                imshow(Ij); hold on;
+                plot(cur_inliers(:,4), cur_inliers(:,5), 'gx');
+                
+                title(['percent inliers = ' num2str(length(cur_inliers)/length(cur_matches)*100), '%']);
+                
+                %subplot(2,1,1);
+                %showMatchedFeatures(Ii, Ij, cur_matches(:,1:2), cur_matches(:,3:4), 'montage');
+                %subplot(2,1,2);
+                %showMatchedFeatures(Ii, Ij, cur_inliers(:,1:2), cur_inliers(:,4:5), 'montage');
+                pause
+            end
+        end
+    end
+end
+
 %% Estimate initial C and R
-inliers12 = inliers{1,2};
-x1 = [inliers12(:,1:2) , ones(size(inliers12, 1), 1)];
-x2 = [inliers12(:,3:4) , ones(size(inliers12, 1), 1)];
+fprintf('Calculating Initial Guess\n');
+Ii = imread('image0000002.bmp');
+Ij = imread('image0000003.bmp');
+inliers12 = inliers{2,3};
+x1 = inliers12(:,1:3);
+x2 = inliers12(:,4:6);
 F = EstimateFundamentalMatrix(x1, x2);
 E = EssentialMatrixFromFundamentalMatrix(F, K);
 [Cset, Rset] = ExtractCameraPose(E);
 
 Xset = cell(4,1);
 for i=1:4
-    Xset{i} = LinearTriangulation(K, zeros(3,1), eye(3), Cset{i}, Rset{i}, inliers12(:,1:2), inliers12(:,3:4));
+    %start the transformation with the identity and build from there
+    Xset{i} = LinearTriangulation(K, [1;0;0], eye(3), Cset{i}, Rset{i}, x1, x2);
+    if verbose
+        points = Xset{i};
+        subplot(2,2,i);
+        showPointCloud(points(:,1), points(:,2), points(:,3));
+    end
 end
+fprintf('Refine Initial Guess\n');
+[C,R,X0] = DisambiguateCameraPose(Cset, Rset, Xset);
+%points = NonlinearTriangulation(K, zeros(3,1), eye(3), C, R, x1, x2, X0);
+Cset = {C};
+Rset = {R};
 
-[C,R] = DisambiguateCameraPose(Cset, Rset, Xset);
-points = NonlinearTriangulation(K, zeros(3,1), eye(3), C, inliers12(:,1:2), inliers12(:,3:4));
-Cset = cell(C);
-Rset = cell(R);
+%% Plot the 3D points
+figure();
+showPointCloud(points(:,1), points(:,2), points(:,3));
+hold on;
+x = xlim;
+y = ylim;
+[gx,gy] = meshgrid(x(1):x(2), y(1):y(2));
+mesh(gx, gy, zeros(size(gy)));
 
 %% Register Cameras and 3D  Points from Other Images
 for i=1:3
