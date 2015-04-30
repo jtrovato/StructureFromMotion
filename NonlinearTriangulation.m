@@ -1,14 +1,21 @@
 function X = NonlinearTriangulation(K, C1, R1, C2, R2, x1, x2, X0)
 %refine 3D triangulation points. itial guess is X0. uses nonlinear
 %optimization to minimize reprojection error.
-    
+    if size(x1,2) == 2 || size(x2,2)==2
+        x1 = [x1, ones(size(x1,1),1)];
+        x2 = [x2, ones(size(x2,1),1)];
+    end
+    numpts = length(X0);
     P1 = K*R1*[eye(3), -C1];
     P2 = K*R2*[eye(3), -C2];
     %options
-    opts = optimoptions(@lsqnonlin, 'Algorithm', 'levenberg-marquardt', 'TolX', 1e-5, 'TolFun', 1e-5, 'MaxFunEvals', 1e64, 'MaxIter', 1e64, 'Display', 'iter');
-
+    opts = optimoptions(@lsqnonlin, 'Algorithm', 'levenberg-marquardt', 'TolX', 1e-5, 'TolFun', 1e-5, 'MaxFunEvals', 1e64, 'MaxIter', 1e64, 'Display', 'off');
     
-    X = lsqnonlin(@repro_error, X0, [], [], opts, P1, P2, x1, x2);
+    X = zeros(size(X0));
+    %each 3D point is a different problem
+    for i = 1:numpts
+        X(i,:) = lsqnonlin(@repro_error, X0(i,:), [], [], opts, P1, P2, x1(i,:), x2(i,:));
+    end
     
 
     function J = repro_error(X, P1, P2, x1, x2)

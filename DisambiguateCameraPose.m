@@ -24,8 +24,6 @@ for i=1:4
         C = Ccur;
         R = Rcur;
         X0 = Xcur;
-        i
-        max_count
     end
 end
         

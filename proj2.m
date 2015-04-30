@@ -63,9 +63,11 @@ if verbose
                 subplot(2,2,1);
                 imshow(Ii); hold on;
                 plot(cur_matches(:,1), cur_matches(:,2), 'rx');
+                title(['image ', num2str(i)]);
                 subplot(2,2,2);
                 imshow(Ij); hold on;
                 plot(cur_matches(:,3), cur_matches(:,4), 'gx');
+                title(['image ', num2str(j)]);
                 subplot(2,2,3);
                 imshow(Ii); hold on;
                 plot(cur_inliers(:,1), cur_inliers(:,2), 'rx');
@@ -75,10 +77,10 @@ if verbose
                 
                 title(['percent inliers = ' num2str(length(cur_inliers)/length(cur_matches)*100), '%']);
                 
-                %subplot(2,1,1);
-                %showMatchedFeatures(Ii, Ij, cur_matches(:,1:2), cur_matches(:,3:4), 'montage');
-                %subplot(2,1,2);
-                %showMatchedFeatures(Ii, Ij, cur_inliers(:,1:2), cur_inliers(:,4:5), 'montage');
+%                 subplot(2,1,1);
+%                 showMatchedFeatures(Ii, Ij, cur_matches(:,1:2), cur_matches(:,3:4), 'montage');
+%                 subplot(2,1,2);
+%                 showMatchedFeatures(Ii, Ij, cur_inliers(:,1:2), cur_inliers(:,4:5), 'montage');
                 pause
             end
         end
@@ -115,12 +117,14 @@ Rset = {R0};
 
 %% Plot the 3D points
 figure();
-showPointCloud(points(:,1), points(:,2), points(:,3));
+R = [0 0 1; -1 0 0; 0 -1 0];
+points_r = (R*points')';
+showPointCloud(points_r(:,1), points_r(:,2), points_r(:,3));
 hold on;
 x = xlim;
 y = ylim;
 [gx,gy] = meshgrid(x(1):x(2), y(1):y(2));
-mesh(gx, gy, zeros(size(gy)));
+%mesh(gx, gy, zeros(size(gy)));
 
 %% Register Cameras and 3D  Points from Other Images
 % after the first two images, start with the third and registers the rest

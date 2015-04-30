@@ -1,7 +1,9 @@
 function [C,R] = LinearPNP(X, x, K)
 %Perspective n point
-numpts = length(X);
-X = [X, ones(numpts, 1)];
+numpts = length(x);
+if size(X, 2) == 3
+    X = [X, ones(numpts, 1)];
+end
 vec2skew = @(v) [0, -v(3), v(2); v(3), 0, -v(1); -v(2), v(1), 0];
 Xdiag = zeros(3,12);
 Xdiag(1, 1:4) = X(1,:);
