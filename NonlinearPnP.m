@@ -1,4 +1,4 @@
-function [C R] = NonlinearPnP(X, x, K, C0, R0)
+function [C, R] = NonlinearPnP(X, x, K, C0, R0)
 % refine choices of C and R usinf nonlinear optimization
     if size(x,2) == 2
         x = [x, ones(size(x,1),1)];
@@ -7,25 +7,31 @@ function [C R] = NonlinearPnP(X, x, K, C0, R0)
         X = [X, ones(size(X,1),1)];
     end
     % convert rotation matrix to quaternions
-
+    q0 = R2q(R0);
+    qC0 = [q0;C0];
     %nonlinear optimization
     opts = optimoptions(@lsqnonlin, 'Algorithm', 'levenberg-marquardt', 'TolX', 1e-5, 'TolFun', 1e-5, 'MaxFunEvals', 1e64, 'MaxIter', 1e64, 'Display', 'off');
     
+    qC = lsqnonlin(@repro_error, qC0, [], [], opts, X, x, K);
+    q = qC(1:4);
+    R = q2R(q);
+    C = qC(5:7);
+    
 
-    function J = repro_error(q, C, X, x, K)
+    function J = repro_error(qC, X, x, K)
     %cost function to be minimized
-    P = K*[q,t];
-    Xaug = [X, ones(size(X,1),1)];
+    numpts = length(x);
+    qcur = qC(1:4);
+    Ccur = qC(5:7);
+    Rcur = q2R(qcur);
+    P = K*Rcur*[eye(3),-Ccur];
     
-    proj1 = P1(1:2,:)*Xaug'; %[2x4]x[4xN] = [2xN]
-    proj1 = bsxfun(@rdivide, proj1, P1(3,:)*Xaug'); %[2xN] / [1x4]x[4xN]
-    J1 = x1(:, 1:2) - proj1';
+    J = 0;
+    for j=1:numpts
+        %calculate reprojection error
+        J = J + abs((x(j,1) - (P(1,:)*X')/(P(3,:)*X') )^2 + (x(j,2) - (P(2,:)*X')/(P(3,:)*X') )^2); %may not need to transpose X
+    end
     
-    proj2 = P2(1:2,:)*Xaug'; %[2x4]x[4xN] = [2xN]
-    proj2 = bsxfun(@rdivide, proj2, P2(3,:)*Xaug'); %[2xN] / [1x4]x[4xN]
-    J2 = x2(:, 1:2)- proj2';
-    
-    J = [J1,J2];
     end
 
 end

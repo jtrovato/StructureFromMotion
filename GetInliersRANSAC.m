@@ -1,10 +1,10 @@
 function [inliers1, inliers2, idx] = GetInliersRANSAC(points1, points2)
 %use ransac to get inlier point between two sets of matched features
 
-maxiters = 100;
+maxiters = 500;
 num_matches = length(points1);
 max_inliers = 0;
-eps = 0.01;
+eps = 0.0075;
 
 % augment the pixel points
 points1 = [points1 , ones(num_matches, 1)];
@@ -24,7 +24,7 @@ for i=1:maxiters
         max_inliers = sum(mask);
         inliers1 = points1(mask, :);
         inliers2 = points2(mask, :);
-        idx= find(mask);
+        idx= mask;
     end
 end
 

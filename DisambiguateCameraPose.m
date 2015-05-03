@@ -11,22 +11,20 @@ for i=1:4
     Rcur = Rset{i};
     Xcur = Xset{i};
     
-    numpts = size(Xcur, 1);
-    count = 0;
-    for j=1:numpts
-        if Rcur(3,:)*(Xcur(j,:)'-Ccur) > 0 %cheirality condition %TODO debg is it a row or column of R and is it transposed
-            count = count +1;
-        end
-    end
+    xmc = bsxfun(@minus, Xcur', Ccur); 
+    cheiral = Rcur(:,3)'*xmc;
+    count = sum(cheiral > 0);
     
     if count > max_count
+        ind = i;
         max_count = count;
         C = Ccur;
         R = Rcur;
         X0 = Xcur;
     end
+    
 end
-        
+fprintf('choosing camera pose %d \n', ind);    
     
     
 end

@@ -1,4 +1,4 @@
-function [Cnew, Rnew] = PnPRANSAC(X, x, K)
+function [Cnew, Rnew] = PnPRANSAC(X, x, K, I)
 %PnPRANSAC
 %we assume that X and x are 3D and 2D correspondences one from the
 %structure the other from a new image. 
@@ -12,26 +12,30 @@ if size(X,2) == 3
 end
 
 numpts = length(x);
-maxiters = 100;
-eps = 0.01;
+maxiters = 1000;
+eps = 5;
 max_inliers= 0;
-
+figure();
 for i=1:maxiters
     rinds = ceil(rand(8,1)*numpts);
-    [R,C] = LinearPNP(X(rinds, :), x(rinds, :), K);
-    P = [R,C];
-    error = zeros(numpts, 1);
-    for j=1:numpts
-        %calculate reprojection error
-        error(i) = abs((x(j,1) - (P(1,:)*X')/(P(3,:)*X') )^2 + (x(j,2) - (P(2,:)*X')/(P(3,:)*X') )^2); %may not need to transpose X
-    end
+    [C,R] = LinearPNP(X(rinds, :), x(rinds, :), K);
+    P = K*R*[eye(3),-C];
+    %calculate reprojection error
+    proj = bsxfun(@rdivide, P(1:2, :)*X', P(3,:)*X'); %[2xN] / [1x4]x[4xN]
+    error = sum((x(:, 1:2) - proj').^2, 2);
+%     imshow(I); hold on;
+%     plot(proj(1,:), proj(2,:), 'rx');
+%     plot(x(:,1), x(:,2), 'g+');
+%     pause
     mask = error < eps;
+    %fprintf('num inliers %d \n', sum(mask));
     if sum(mask) > max_inliers
-        max_inliers = sum(mask);
+        best_mask = mask;
+        max_inliers = sum(mask)
         inliers = x(mask, :); %the points that match with the 3D points
     end
 end
-[Cnew,Rnew] = LinearPNP(X(mask, :), inliers, K);
+[Cnew,Rnew] = LinearPNP(X(best_mask, :), x(best_mask, :), K);
 
 end
 
