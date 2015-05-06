@@ -12,8 +12,8 @@ if size(X,2) == 3
 end
 
 numpts = length(x);
-maxiters = 1000;
-eps = 10;
+maxiters = 3000;
+eps = 5;
 max_inliers= 0;
 % figure();
 for i=1:maxiters
@@ -24,6 +24,7 @@ for i=1:maxiters
     proj = bsxfun(@rdivide, P(1:2, :)*X', P(3,:)*X'); %[2xN] / [1x4]x[4xN]
     error = sum((x(:, 1:2) - proj').^2, 2);
     mask = error < eps;
+    
     %fprintf('num inliers %d \n', sum(mask));
     if sum(mask) > max_inliers
         Cnew = C;
@@ -42,5 +43,5 @@ end
 % plot(proj(1,:), proj(2,:), 'rx');
 % plot(x(best_mask,1), x(best_mask,2), 'g+');
 % pause
-% end
+end
 

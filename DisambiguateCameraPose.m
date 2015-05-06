@@ -12,8 +12,8 @@ for i=1:4
     Xcur = Xset{i};
     
     xmc = bsxfun(@minus, Xcur', Ccur); 
-    cheiral = Rcur(:,3)'*xmc;
-    count = sum(cheiral > 0);
+    cheiral = Xcur(:,3)' > 0 & Rcur(:,3)'*xmc > 0;
+    count = sum(cheiral);
     
     if count > max_count
         ind = i;

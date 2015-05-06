@@ -4,7 +4,7 @@ function [inliers1, inliers2, idx] = GetInliersRANSAC(points1, points2)
 maxiters = 500;
 num_matches = length(points1);
 max_inliers = 0;
-eps = 0.008;
+eps = 0.1;
 
 % augment the pixel points
 points1 = [points1 , ones(num_matches, 1)];

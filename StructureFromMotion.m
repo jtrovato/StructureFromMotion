@@ -17,13 +17,14 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Load matching
-Mx = []; My = []; M = [];
+Mx = []; My = []; M = []; colors = [];
 for iImage = 1 : nImages-1;
     str = sprintf('matching/matching%d.txt', iImage);
-    [mx, my, m] = LoadMatching(str, iImage, nImages);
+    [mx, my, m c] = LoadMatching(str, iImage, nImages);
     Mx = [Mx;mx];
     My = [My;my];
     M = [M;m];
+    colors = [colors; c];
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
@@ -54,8 +55,8 @@ end
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Set initial two frames
-initialframe1 = 2;
-initialframe2 = 3;
+initialframe1 = 1;
+initialframe2 = 4;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Get point index for two frames
@@ -69,7 +70,7 @@ x2 = [Mx(idx,initialframe2) My(idx,initialframe2)];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Get fundamental matrix and essential mtraix
-F = EstimateFundamentalMatrix(x1, x2);
+F = EstimateFundamentalMatrix(x1, x2)
 E = EssentialMatrixFromFundamentalMatrix(F,K);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
@@ -80,9 +81,9 @@ E = EssentialMatrixFromFundamentalMatrix(F,K);
 figure();
 for i = 1 : 4
     Xset{i} = LinearTriangulation(K, zeros(3,1), eye(3), Cset{i}, Rset{i}, x1, x2); 
-    %subplot(2,2,i);
-    figure();
-    visualizeStructure(Xset{i}, {[0 0 0]', Cset{i}}, {eye(3), Rset{i}}, im{initialframe1}, x1);
+    subplot(2,2,i);
+    cs = repmat([0 0 1], length(Xset{i}), 1);
+    visualizeStructure(Xset{i}, {[0 0 0]', Cset{i}}, {eye(3), Rset{i}}, cs);
 end
 pause(0.025);
 [C, R, X] = DisambiguateCameraPose(Cset, Rset, Xset);
@@ -93,10 +94,7 @@ x2(cammask, :) = [];
 
 idx = idx(~cammask);
 
-%%%%%%%%%%%%%%%%%%%\begin{subfigure}[b]{0.3\textwidth}
-   \includegraphics[width=0.8\textwidth]{Nvariousg1}
-   \caption{}
-   \label{fig:Ng1}%%%%%%%%%%%%%%%%%%55
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Nonlinear triangulation
 disp('Nonlinear Triangulation');
 X = NonlinearTriangulation(K, zeros(3,1), eye(3), C, R, x1, x2, X);
@@ -113,16 +111,17 @@ r_idx = [initialframe1, initialframe2];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Set camera pose
+Cr_set = cell(2,1);
+Rr_set = cell(2,1);
 Cr_set{1} = zeros(3,1);
 Rr_set{1} = eye(3,3);
 Cr_set{2} = C;
 Rr_set{2} = R;
 
 figure()
-visualizeStructure(X, Cr_set, Rr_set, im{initialframe2}, x2);
+visualizeStructure(X, Cr_set, Rr_set, colors(idx, :));
 pause(0.025);
-
-
+pause
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Set points and visibility matrix
@@ -174,17 +173,20 @@ for iImage = 1 : nImages
 %     idxs = intersect(idx1, find(M(:,initialframe2)==1));
 %     plot(Mx(find(M(:,initialframe2)==1),initialframe2), My(find(M(:,initialframe2)==1),initialframe2), 'rx');
 %     plot(Mx(idxs,initialframe2), My(idxs,initialframe2), 'g+');
+
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Run PnP
     fprintf(' \tLinear PnP \n');
     [C, R] = PnPRANSAC(X, x, K, im{iImage});
     figure()
-    visualizeStructure(X, {C}, {R}, im{iImage}, x);
+    visualizeStructure(X, {C}, {R}, colors(idx));
+    pause
     
     fprintf('\tNonlinear PnP\n');
     [C, R] = NonlinearPnP(X, x, K, C, R);
     figure()
-    visualizeStructure(X, {C}, {R}, im{iImage}, x);
+    visualizeStructure(X, {C}, {R}, colors(idx));
     pause
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Set camera poses and reconstructed frame index
@@ -206,15 +208,19 @@ for iImage = 1 : nImages
         x2 = [Mx(idx,iImage) My(idx,iImage)];
         X = LinearTriangulation(K, Cr_set{iImage1}, Rr_set{iImage1}, C, R, x1, x2);
         %X(X(:,3) < 0) = [];
-        %fprintf('\t Nonlinear Triangulation\n');
-        X = NonlinearTriangulation(K, Cr_set{iImage1}, Rr_set{iImage1}, C, R, x1, x2, X);
+        %fprintf('\tNonlinear Triangulation\n');
+        %X = NonlinearTriangulation(K, Cr_set{iImage1}, Rr_set{iImage1}, C, R, x1, x2, X);
         
         X3D(idx,:) = X;
         ReconX(idx) = 1;
+        V(idx,r_idx(iImage1)) = 1;
+        V(idx,iImage) = 1;
+        
     end    
     
-    
-    visualizeStructure(X3D(ReconX == 1, :), Cr_set, Rr_set, im{iImage}, x2);
+    allptsind = find(ReconX==1);
+    allx = [Mx(idx,iImage) My(idx,iImage)];
+    visualizeStructure(X3D(ReconX == 1, :), Cr_set, Rr_set, colors(allptsind));
     %pause
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
@@ -225,6 +231,6 @@ for iImage = 1 : nImages
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Run bundle adjustment
-    %disp('Bundle adjustment');
-    %[Cset, Rset, X] = BundleAdjustment(K, Cr_set, Rr_set, X3D, ReconX, V_bundle, Mx_bundle, My_bundle);
+    sdisp('Bundle adjustment');
+    [Cset, Rset, X] = BundleAdjustment(K, Cr_set, Rr_set, X3D, ReconX, V_bundle, Mx_bundle, My_bundle);
 end
