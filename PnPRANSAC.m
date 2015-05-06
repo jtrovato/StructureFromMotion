@@ -13,29 +13,34 @@ end
 
 numpts = length(x);
 maxiters = 1000;
-eps = 5;
+eps = 10;
 max_inliers= 0;
-figure();
+% figure();
 for i=1:maxiters
-    rinds = ceil(rand(8,1)*numpts);
+    rinds = ceil(rand(6,1)*numpts);
     [C,R] = LinearPNP(X(rinds, :), x(rinds, :), K);
     P = K*R*[eye(3),-C];
     %calculate reprojection error
     proj = bsxfun(@rdivide, P(1:2, :)*X', P(3,:)*X'); %[2xN] / [1x4]x[4xN]
     error = sum((x(:, 1:2) - proj').^2, 2);
-%     imshow(I); hold on;
-%     plot(proj(1,:), proj(2,:), 'rx');
-%     plot(x(:,1), x(:,2), 'g+');
-%     pause
     mask = error < eps;
     %fprintf('num inliers %d \n', sum(mask));
     if sum(mask) > max_inliers
+        Cnew = C;
+        Rnew = R;
         best_mask = mask;
-        max_inliers = sum(mask)
+        max_inliers = sum(mask);
+        fprintf('found %d inliers  average error = %f\n', max_inliers, mean(error));
         inliers = x(mask, :); %the points that match with the 3D points
     end
 end
 [Cnew,Rnew] = LinearPNP(X(best_mask, :), x(best_mask, :), K);
-
-end
+% P = K*Rnew*[eye(3),-Cnew];
+% %calculate reprojection error
+% proj = bsxfun(@rdivide, P(1:2, :)*X(best_mask,:)', P(3,:)*X(best_mask,:)'); %[2xN] / [1x4]x[4xN]
+% imshow(I); hold on;
+% plot(proj(1,:), proj(2,:), 'rx');
+% plot(x(best_mask,1), x(best_mask,2), 'g+');
+% pause
+% end
 

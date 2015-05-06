@@ -46,7 +46,7 @@ for iImage1 = 1 : nImages-1
         if size(x1,1) < 8
             continue;
         end
-        [x1, x2, inlier] = GetInliersRANSAC(x1, x2);
+        [x1, x2, inlier] = GetInliersRANSAC(x1, x2); %inlier is a mask of where the inlies are. 
         M(idx(~inlier),iImage1) = 0; %set all non-inliers to 0
         fprintf('images %d and %d. Percent inliers = %f \n', iImage1, iImage2, sum(inlier)/length(inlier));
     end
@@ -80,19 +80,32 @@ E = EssentialMatrixFromFundamentalMatrix(F,K);
 figure();
 for i = 1 : 4
     Xset{i} = LinearTriangulation(K, zeros(3,1), eye(3), Cset{i}, Rset{i}, x1, x2); 
-    subplot(2,2,i);
-    visualizeStructure(Xset{i}, {[0 0 0]', Cset{i}}, {eye(3), Rset{i}});
+    %subplot(2,2,i);
+    figure();
+    visualizeStructure(Xset{i}, {[0 0 0]', Cset{i}}, {eye(3), Rset{i}}, im{initialframe1}, x1);
 end
 pause(0.025);
 [C, R, X] = DisambiguateCameraPose(Cset, Rset, Xset);
-%X(X(:,3) < 0, :) = []; %removing points behind the camera, but this seems
-%illegal
+cammask = X(:,3) < 0;
+X(cammask, :) = []; %removing points behind the camera, but this seems illegal
+x1(cammask, :) = [];
+x2(cammask, :) = [];
 
+idx = idx(~cammask);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
+%%%%%%%%%%%%%%%%%%%\begin{subfigure}[b]{0.3\textwidth}
+   \includegraphics[width=0.8\textwidth]{Nvariousg1}
+   \caption{}
+   \label{fig:Ng1}%%%%%%%%%%%%%%%%%%55
 % Nonlinear triangulation
 disp('Nonlinear Triangulation');
 X = NonlinearTriangulation(K, zeros(3,1), eye(3), C, R, x1, x2, X);
+distmask = abs(X(:,1)) > 70 | abs(X(:,2)) > 70  | abs(X(:,3)) > 70 ;
+X(distmask, :) = []; %get rid of points too far away
+x1(distmask, :) = [];
+x2(distmask, :) = [];
+
+idx = idx(~distmask);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Set reconstructed frame
@@ -106,10 +119,10 @@ Cr_set{2} = C;
 Rr_set{2} = R;
 
 figure()
-visualizeStructure(X, Cr_set, Rr_set);
+visualizeStructure(X, Cr_set, Rr_set, im{initialframe2}, x2);
 pause(0.025);
 
-% return;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Set points and visibility matrix
@@ -166,12 +179,12 @@ for iImage = 1 : nImages
     fprintf(' \tLinear PnP \n');
     [C, R] = PnPRANSAC(X, x, K, im{iImage});
     figure()
-    visualizeStructure(X, {C}, {R});
+    visualizeStructure(X, {C}, {R}, im{iImage}, x);
     
     fprintf('\tNonlinear PnP\n');
     [C, R] = NonlinearPnP(X, x, K, C, R);
     figure()
-    visualizeStructure(X, {C}, {R});
+    visualizeStructure(X, {C}, {R}, im{iImage}, x);
     pause
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Set camera poses and reconstructed frame index
@@ -201,8 +214,8 @@ for iImage = 1 : nImages
     end    
     
     
-    visualizeStructure(X3D(ReconX == 1, :), Cr_set, Rr_set);
-    pause
+    visualizeStructure(X3D(ReconX == 1, :), Cr_set, Rr_set, im{iImage}, x2);
+    %pause
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Set visibiltiy and measurements for bundle adjustment

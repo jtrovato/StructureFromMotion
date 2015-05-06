@@ -52,29 +52,29 @@ end
 %% Visualize RANSAC
 verbose = 1;
 if verbose
-    for i=1:numimages
-        Ii = imread(['image000000', num2str(i), '.bmp']);
+    for i=1:numimages-1
+        Ii = imread(['data/image000000', num2str(i), '.bmp']);
         for j = i+1:numimages
 
             if ~isempty(inliers{i, j})
-                Ij = imread(['image000000', num2str(j), '.bmp']);
+                Ij = imread(['data/image000000', num2str(j), '.bmp']);
                 cur_inliers = inliers{i,j};
                 cur_matches = matches{i,j};
-                subplot(2,2,1);
-                imshow(Ii); hold on;
-                plot(cur_matches(:,1), cur_matches(:,2), 'rx');
-                title(['image ', num2str(i)]);
-                subplot(2,2,2);
-                imshow(Ij); hold on;
-                plot(cur_matches(:,3), cur_matches(:,4), 'gx');
-                title(['image ', num2str(j)]);
-                subplot(2,2,3);
-                imshow(Ii); hold on;
-                plot(cur_inliers(:,1), cur_inliers(:,2), 'rx');
-                subplot(2,2,4);
-                imshow(Ij); hold on;
-                plot(cur_inliers(:,4), cur_inliers(:,5), 'gx');
-                
+%                 subplot(2,2,1);
+%                  imshow(Ii); hold on;
+%                 plot(cur_matches(:,1), cur_matches(:,2), 'rx');
+%                 title(['image ', num2str(i)]);
+%                 subplot(2,2,2);
+%                 imshow(Ij); hold on;
+%                 plot(cur_matches(:,3), cur_matches(:,4), 'gx');
+%                 title(['image ', num2str(j)]);
+%                 subplot(2,2,3);
+%                 imshow(Ii); hold on;
+%                 plot(cur_inliers(:,1), cur_inliers(:,2), 'rx');
+%                 subplot(2,2,4);
+%                 imshow(Ij); hold on;
+%                 plot(cur_inliers(:,4), cur_inliers(:,5), 'gx');
+                showMatchedFeatures(Ii, Ij, cur_inliers(:,1:2), cur_inliers(:,4:5))
                 title(['percent inliers = ' num2str(length(cur_inliers)/length(cur_matches)*100), '%']);
                 
 %                 subplot(2,1,1);

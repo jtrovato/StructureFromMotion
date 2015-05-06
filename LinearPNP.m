@@ -1,6 +1,6 @@
 function [C,R] = LinearPNP(X, x, K)
 %Perspective n point
-numpts = length(x);
+numpts = size(x,1);
 if isempty(X) || isempty(x)
     disp('problem');
 end
@@ -27,7 +27,7 @@ P = [Pvec(1:4)';Pvec(5:8)';Pvec(9:12)'];
 
 RC = K\P;
 [U,~,V] = svd(RC(:,1:3));
-R = U*V'*sign(det(U*V'));
+R = sign(det(U*V'))*U*V';
 C = -R'*RC(:,4);
 end
 

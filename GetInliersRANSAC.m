@@ -4,7 +4,7 @@ function [inliers1, inliers2, idx] = GetInliersRANSAC(points1, points2)
 maxiters = 500;
 num_matches = length(points1);
 max_inliers = 0;
-eps = 0.0075;
+eps = 0.008;
 
 % augment the pixel points
 points1 = [points1 , ones(num_matches, 1)];
@@ -15,11 +15,8 @@ for i=1:maxiters
     rinds = ceil(rand(8,1)*num_matches);
     %rinds = randsample(1:num_matches,8);
     F = EstimateFundamentalMatrix(points1(rinds, :), points2(rinds, :));
-    comp = zeros(num_matches, 1);
-    for j=1:num_matches
-        comp(j) = abs(points2(j,:)*F*points1(j,:)');
-    end
-    mask = comp < eps;
+    mask = abs(diag(points2*F*points1')) < eps;
+    
     if sum(mask) > max_inliers
         max_inliers = sum(mask);
         inliers1 = points1(mask, :);
