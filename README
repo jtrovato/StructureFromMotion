@@ -1,0 +1,10 @@
+Joe Trovato
+6 May 2015
+Structure from Motion Project for CIS580
+University of Pennsylvania
+
+OS: Ubuntu 14.04
+Extra Libs: SBA + dependencies
+
+Top Level: StructureFromMotion.m
+Output: Assert the  'report' variable in StructureFromMotion.m to generate figure reports
