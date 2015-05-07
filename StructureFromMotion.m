@@ -1,7 +1,7 @@
-%function StructureFromMotion
+function StructureFromMotion
 
 %%
-close all;
+close all; 
 K = [568.996140852 0 643.21055941;
      0 568.988362396 477.982801038;
      0 0 1];
@@ -87,23 +87,11 @@ for i = 1 : 4
 end
 pause(0.025);
 [C, R, X] = DisambiguateCameraPose(Cset, Rset, Xset);
-cammask = X(:,3) < 0;
-X(cammask, :) = []; %removing points behind the camera, but this seems illegal
-x1(cammask, :) = [];
-x2(cammask, :) = [];
-
-idx = idx(~cammask);
-
+ptmask = prunePoints(X);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Nonlinear triangulation
 disp('Nonlinear Triangulation');
-X = NonlinearTriangulation(K, zeros(3,1), eye(3), C, R, x1, x2, X);
-distmask = abs(X(:,1)) > 70 | abs(X(:,2)) > 70  | abs(X(:,3)) > 70 ;
-X(distmask, :) = []; %get rid of points too far away
-x1(distmask, :) = [];
-x2(distmask, :) = [];
-
-idx = idx(~distmask);
+X = NonlinearTriangulation(K, zeros(3,1), eye(3), C, R, x1(ptmask,:), x2(ptmask, :), X(ptmask, :));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Set reconstructed frame
@@ -118,17 +106,19 @@ Rr_set{1} = eye(3,3);
 Cr_set{2} = C;
 Rr_set{2} = R;
 
-figure()
-visualizeStructure(X, Cr_set, Rr_set, colors(idx, :));
-pause(0.025);
-pause
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
 % Set points and visibility matrix
-X3D(idx,:) = X;
-ReconX(idx) = 1;
-V(idx, initialframe1) = 1;
-V(idx, initialframe2) = 1;
+X3D(idx(ptmask),:) = X;
+ReconX(idx(ptmask)) = 1;
+V(idx(ptmask), initialframe1) = 1;
+V(idx(ptmask), initialframe2) = 1;
+
+figure()
+visualizeStructure(X, Cr_set, Rr_set, colors(ReconX == 1, :));
+pause(0.025);
+%pause
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
@@ -136,14 +126,14 @@ V(idx, initialframe2) = 1;
 fprintf('Adding the other images \n');
 for iImage = 1 : nImages
     if any(r_idx==iImage)
-        continue;
+        continue; 
     else
         fprintf(['adding image ' num2str(iImage) '\n']);
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Get 2D-3D correspondences
-    idx1 = find(ReconX==1); %points in the strucure
+    idx1 = find(ReconX==1); %points in the strucure 
     idx2 = find(M(:,iImage)==1); %points in the new image
     idx = intersect(idx1, idx2); %the points in both
     PNPpoints = length(idx)
@@ -153,41 +143,19 @@ for iImage = 1 : nImages
     
     X = X3D(idx,:);
     x = [Mx(idx,iImage) My(idx,iImage)];
-    
-%     figure();
-%     imshow(im{iImage});
-%     hold on;
-%     plot(Mx(idx2,iImage), My(idx2,iImage), 'rx');
-%     plot(Mx(idx,iImage), My(idx,iImage), 'g+');
-% 
-%     figure()
-%     imshow(im{initialframe1});
-%     hold on;
-%     idxs = intersect(idx1, find(M(:,initialframe1)==1));
-%     plot(Mx(find(M(:,initialframe1)==1),initialframe1), My(find(M(:,initialframe1)==1),initialframe1), 'rx');
-%     plot(Mx(idxs,initialframe1), My(idxs,initialframe1), 'g+');
-%     
-%     figure()
-%     imshow(im{initialframe2});
-%     hold on;
-%     idxs = intersect(idx1, find(M(:,initialframe2)==1));
-%     plot(Mx(find(M(:,initialframe2)==1),initialframe2), My(find(M(:,initialframe2)==1),initialframe2), 'rx');
-%     plot(Mx(idxs,initialframe2), My(idxs,initialframe2), 'g+');
-
-    
+    %figure();
+    %visualizeStructure(X, Cr_set, Rr_set, colors(idx));
+    %pause
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Run PnP
     fprintf(' \tLinear PnP \n');
-    [C, R] = PnPRANSAC(X, x, K, im{iImage});
-    figure()
-    visualizeStructure(X, {C}, {R}, colors(idx));
-    pause
+    [C, R, inds] = PnPRANSAC(X, x, K, im{iImage});
     
     fprintf('\tNonlinear PnP\n');
-    [C, R] = NonlinearPnP(X, x, K, C, R);
-    figure()
-    visualizeStructure(X, {C}, {R}, colors(idx));
-    pause
+    [C, R] = NonlinearPnP(X(inds,:), x(inds,:), K, C, R, im{iImage});
+    %figure()
+    %visualizeStructure(X(mask,:), {C}, {R}, colors(idx(mask)));
+    %pause
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Set camera poses and reconstructed frame index
     Cr_set{end+1} = C;
@@ -207,21 +175,19 @@ for iImage = 1 : nImages
         x1 = [Mx(idx,r_idx(iImage1)) My(idx,r_idx(iImage1))];
         x2 = [Mx(idx,iImage) My(idx,iImage)];
         X = LinearTriangulation(K, Cr_set{iImage1}, Rr_set{iImage1}, C, R, x1, x2);
-        %X(X(:,3) < 0) = [];
-        %fprintf('\tNonlinear Triangulation\n');
-        %X = NonlinearTriangulation(K, Cr_set{iImage1}, Rr_set{iImage1}, C, R, x1, x2, X);
+        fprintf('\tNonlinear Triangulation\n');
+        ptmask = prunePoints(X);
+        X = NonlinearTriangulation(K, Cr_set{iImage1}, Rr_set{iImage1}, C, R,  x1(ptmask,:), x2(ptmask, :), X(ptmask, :));
         
-        X3D(idx,:) = X;
-        ReconX(idx) = 1;
-        V(idx,r_idx(iImage1)) = 1;
-        V(idx,iImage) = 1;
+        X3D(idx(ptmask),:) = X;
+        ReconX(idx(ptmask)) = 1;
+        V(idx(ptmask), initialframe1) = 1;
+        V(idx(ptmask), initialframe2) = 1;
         
     end    
-    
-    allptsind = find(ReconX==1);
-    allx = [Mx(idx,iImage) My(idx,iImage)];
-    visualizeStructure(X3D(ReconX == 1, :), Cr_set, Rr_set, colors(allptsind));
-    %pause
+    figure();
+    visualizeStructure(X3D(ReconX == 1, :), Cr_set, Rr_set, colors(ReconX==1));
+    pause
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Set visibiltiy and measurements for bundle adjustment
@@ -231,6 +197,6 @@ for iImage = 1 : nImages
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Run bundle adjustment
-    sdisp('Bundle adjustment');
-    [Cset, Rset, X] = BundleAdjustment(K, Cr_set, Rr_set, X3D, ReconX, V_bundle, Mx_bundle, My_bundle);
+    %disp('Bundle adjustment');
+    %[Cset, Rset, X] = BundleAdjustment(K, Cr_set, Rr_set, X3D, ReconX, V_bundle, Mx_bundle, My_bundle);
 end

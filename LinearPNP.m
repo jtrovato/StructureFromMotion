@@ -4,8 +4,11 @@ numpts = size(x,1);
 if isempty(X) || isempty(x)
     disp('problem');
 end
-if size(X, 2) == 3
-    X = [X, ones(numpts, 1)];
+if size(x,2) == 2
+    x = [x, ones(size(x,1),1)];
+end
+if size(X,2) == 3
+    X = [X, ones(size(X,1),1)];
 end
 vec2skew = @(v) [0, -v(3), v(2); v(3), 0, -v(1); -v(2), v(1), 0];
 
@@ -33,9 +36,9 @@ end
 
 %reconditioning
 RC = P;
-[U,d,V] = svd(RC(:,1:3));
+[U,D,V] = svd(RC(:,1:3));
 R = sign(det(U*V'))*U*V';
-C = -R'*RC(:,4)/d(1,1);
+C = -R'*RC(:,4)/D(1,1);
 
 end
 
