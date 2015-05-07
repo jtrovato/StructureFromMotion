@@ -1,4 +1,11 @@
 function plot_projections3(I, R1, C1, R2, C2, K, X, x)
+if size(x,2) == 2
+    x = [x, ones(size(x,1),1)];
+end
+if size(X,2) == 3
+    X = [X, ones(size(X,1),1)];
+end
+
 P1 = K*R1*[eye(3),-C1];
 P2 = K*R2*[eye(3),-C2];
 

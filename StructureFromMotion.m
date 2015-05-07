@@ -2,7 +2,7 @@ function StructureFromMotion
 addpath('sba-1.6/matlab');
 addpath('SBA_example');
 
-report = 0;
+report = 1;
 %%
 close all; 
 K = [568.996140852 0 643.21055941;
@@ -77,7 +77,7 @@ if report
     showMatchedFeatures(im{initialframe1}, im{initialframe2}, x1, x2);
     figure(2);
     title(['Another view of RANSAC matches. Images ', num2str(initialframe1), ' and ', num2str(initialframe1)]);
-    showMatchedFeatures(im{initialframe1}, im{initialframe2}, x1, x2);
+    showMatchedFeatures(im{initialframe1}, im{initialframe2}, x1, x2, 'montage');
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
@@ -98,8 +98,11 @@ end
 [Cset, Rset] = ExtractCameraPose(E);
 if report
     fprintf('Possible Camera Poses\n');
-    Cset
-    Rset
+    for i=1:length(Cset)
+        sprintf('Pose %d \n:, i');
+        Cset{i}
+        Rset{i}
+    end
 end
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
@@ -152,9 +155,9 @@ camera_colors = colormap(jet(nImages));
 if report
     %3D
     figure(4);
-    visualizeStructure(Xlintri, Cr_set{1}, Rr_set{1}, repmat([1 0 0], length(Xlintri), 1));
+    visualizeStructure(Xlintri, {Cr_set{1}}, {Rr_set{1}}, repmat([1 0 0], length(Xlintri), 1));
     hold on;
-    visualizeStructure(X, Cr_set{2}, Rr_set{2}, repmat([0 0 1], length(X), 1));
+    visualizeStructure(X, {Cr_set{2}}, {Rr_set{2}}, repmat([0 0 1], length(X), 1));
     hold off;
     title('Linear vs Nonlinear Triangualtion');
     legend('Linear Triangulation', 'Nonlinear Triangulation');
@@ -167,7 +170,7 @@ end
 
 if report
     figure(8)
-    visualizeStructure(X, Cr_set, Rr_set, camera_colors(1, :));
+    visualizeStructure(X, Cr_set, Rr_set, repmat(camera_colors(1, :), length(X), 1));
     hold on;
     pause(0.025);
 end
@@ -221,7 +224,7 @@ for iImage = 1 : nImages
     V(idx, iImage) = 1;
     
     %plot the output of PNP
-    if report
+    if report && iImage == 2
         %3D
         figure(6);
         title(['Adding Camera ', num2str(iImage), ]);
@@ -266,24 +269,34 @@ for iImage = 1 : nImages
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
     % Run bundle adjustment
-    disp('Bundle adjustment');
-    [Cset, Rset, X] = BundleAdjustment(K, Cr_set, Rr_set, X3D, ReconX, V_bundle, Mx_bundle, My_bundle);
+    %disp('Bundle adjustment');
+    %[Cset, Rset, X] = BundleAdjustment(K, Cr_set, Rr_set, X3D, ReconX, V_bundle, Mx_bundle, My_bundle);
     
     
     if report
         %plot each iteration in a different color
         figure(8);
+        hold on;
         inds = V(:,iImage) == 1;
-        visualizeStructure(X3D(ind,:), C, R, camera_colors(iImage, :));
+        visualizeStructure(X3D(inds,:), {C}, {R}, repmat(camera_colors(iImage, :), length(inds), 1));
+        legend('cam1 and cam4', 'cam2', 'cam3', 'cam5', 'cam6');
     else
-    figure();
-    visualizeStructure(X3D(ReconX == 1, :), Cr_set, Rr_set, colors(ReconX==1, :));
-    %pause
+        figure();
+        visualizeStructure(X3D(ReconX == 1, :), Cr_set, Rr_set, colors(ReconX==1, :));
+        %pause
     end
 end
 %output final bundle
 if report
     figure;
-    title('The Final Reconstruction');
     visualizeStructure(X3D(ReconX == 1, :), Cr_set, Rr_set, colors(ReconX==1, :));
+    title('The Final Reconstruction');
+    
+    for i = 1:6
+        figure();
+        plot_projections(im{i}, Rr_set{i}, Cr_set{i}, K, X3D(ReconX ==1, :), [Mx(ReconX ==1,i) My(ReconX ==1,i)]);
+    end
+    
+    sprintf('Reconstructed %d points!\n', sum(ReconX == 1));
+    
 end
