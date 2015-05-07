@@ -186,7 +186,7 @@ for iImage = 1 : nImages
         
     end    
     figure();
-    visualizeStructure(X3D(ReconX == 1, :), Cr_set, Rr_set, colors(ReconX==1));
+    visualizeStructure(X3D(ReconX == 1, :), Cr_set, Rr_set, colors(ReconX==1, :));
     pause
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
