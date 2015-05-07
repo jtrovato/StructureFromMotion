@@ -15,7 +15,7 @@ for i=1:length(Cset)
     unit_r = R*Rset{i}'*unit;
     t = -Rset{i}*Cset{i};
     Cr = R*Cset{i};
-    quiver3(Cr(1), Cr(2), Cr(3), unit_r(1), unit_r(2), unit_r(3), 'MaxHeadSize', 0.5, 'LineWidth', 2);
+    quiver3(Cr(1), Cr(2), Cr(3), unit_r(1), unit_r(2), unit_r(3), 'MaxHeadSize', 0.5, 'LineWidth', 2, 'Color', colors(1,:));
     
 end
 hold off;
