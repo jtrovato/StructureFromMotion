@@ -17,15 +17,10 @@ function [C, R] = NonlinearPnP(X, x, K, C0, R0, I)
     R = q2R(q);
     C = qC(5:7);
     
-    Pnew = K*R*[eye(3),-C];
+    %Pnew = K*R*[eye(3),-C];
     %calculate reprojection error
-%     figure();
-%     proj = bsxfun(@rdivide, Pnew(1:2, :)*X', Pnew(3,:)*X'); %[2xN] / [1x4]x[4xN]
-%     imshow(I); hold on;
-%     plot(proj(1,:), proj(2,:), 'rx');
-%     plot(x(:,1), x(:,2), 'g+');
-%     title('Reprojection error after Nonlinear PNP');
-%     pause(0.05);
+%   figure();
+%   plot_projections(I,R, C, K, X, x);
 
 end
 

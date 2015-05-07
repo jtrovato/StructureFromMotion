@@ -41,13 +41,6 @@ end
 
 [Cnew,Rnew] = LinearPNP(X(best_mask, :), x(best_mask, :), K);
 % figure
-% P = K*Rnew*[eye(3),-Cnew];
-% %calculate reprojection error
-% proj = bsxfun(@rdivide, P(1:2, :)*X(best_mask,:)', P(3,:)*X(best_mask,:)'); %[2xN] / [1x4]x[4xN]
-% imshow(I); hold on;
-% plot(proj(1,:), proj(2,:), 'rx');
-% plot(x(best_mask,1), x(best_mask,2), 'g+');
-% title('Reprojection error after Linear PNP');
-% pause(0.025);
+% plot_projections(I, Rnew, Cnew, K, X(best_mask, :), x(best_mask, :))
 end
 
